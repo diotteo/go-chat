@@ -1,0 +1,32 @@
+syntax = "proto3";
+package chat.libs;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "./libs";
+
+enum TypeId {
+	REGISTER_MESSAGE_ID = 0;
+	USER_MESSAGE_ID = 1;
+	QUIT_MESSAGE_ID = 2;
+}
+
+message RegisterMessage {
+	TypeId type_id = 1;
+	string name = 2;
+	google.protobuf.Timestamp sent_ts = 3;
+}
+
+message UserMessage {
+	TypeId type_id = 1;
+	string name = 2;
+	google.protobuf.Timestamp sent_ts = 3;
+	string user_message = 4;
+}
+
+message QuitMessage {
+	TypeId type_id = 1;
+	string name = 2;
+	google.protobuf.Timestamp sent_ts = 3;
+}
+
