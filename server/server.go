@@ -32,34 +32,34 @@ func main() {
 			switch gen_msg.MessageType() {
 			case libs.RegisterMessageId:
 				msg := gen_msg.(*libs.RegisterMessage)
-				client, found := clients[msg.Name()]
+				client, found := clients[msg.Name]
 				_ = client
 				if found {
-					fmt.Printf("Name %s already taken\n", msg.Name())
+					fmt.Printf("Name %s already taken\n", msg.Name)
 				} else {
-					fmt.Printf("Registering new user %s from %s\n", msg.Name(), addr.IP)
-					sender := libs.NewClient(msg.Name(), addr)
+					fmt.Printf("Registering new user %s from %s\n", msg.Name, addr.IP)
+					sender := libs.NewClient(msg.Name, addr)
 					for _, client := range clients {
 						conn.WriteToUDP(sender.GetRegisterMessage(), client.Addr())
 					}
-					clients[msg.Name()] = sender
+					clients[msg.Name] = sender
 				}
 			case libs.SendMessageId:
 				msg := gen_msg.(*libs.SendMessage)
-				fmt.Printf("[%s] %s\n", msg.Name(), msg.UserMessage())
-				sender, ok := clients[msg.Name()]
+				fmt.Printf("[%s] %s\n", msg.Name, msg.UserMessage)
+				sender, ok := clients[msg.Name]
 				if ok {
 					for name, client := range clients {
-						conn.WriteToUDP(sender.GetSendMessage(msg.UserMessage()), client.Addr())
+						conn.WriteToUDP(sender.GetSendMessage(msg.UserMessage), client.Addr())
 						_ = name
 					}
 				}
 			case libs.QuitMessageId:
 				msg := gen_msg.(*libs.QuitMessage)
-				sender, ok := clients[msg.Name()]
+				sender, ok := clients[msg.Name]
 				if ok {
-					fmt.Printf("** %s has left **\n", msg.Name())
-					delete(clients, msg.Name())
+					fmt.Printf("** %s has left **\n", msg.Name)
+					delete(clients, msg.Name)
 					for _, client := range clients {
 						conn.WriteToUDP(sender.GetQuitMessage(), client.Addr())
 					}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 	"encoding/gob"
+	"bytes"
 	)
 
 type MessageTypeId int8
@@ -15,168 +16,116 @@ const (
 )
 
 type Message struct {
-	type_id MessageTypeId
-	name string
-	time time.Time
+	TypeId MessageTypeId
+	Name string
+	Time time.Time
 }
 
 type Messager interface {
 	MessageType() MessageTypeId
-	Time() time.Time
-	Name() string
 }
 
-func (c *Client) GetRegisterMessage() []byte {
+func (self Message) MessageType() MessageTypeId {
+	return self.TypeId
+}
+
+func (self *Client) GetRegisterMessage() []byte {
 	buf := bytes.Buffer{}
-	raw := []byte{byte(RegisterMessageId)}
-	raw = append(raw, []byte(time.Now()))
-	raw = append(raw, []byte(c.name + "\x00")...)
-	return raw
-}
+	enc := gob.NewEncoder(&buf)
 
-func (c *Client) GetSendMessage(msg string) ([]byte) {
-	raw := append([]byte{byte(SendMessageId)}, []byte(c.name + "\x00" + msg + "\x00")...)
-	return raw
+	msg := RegisterMessage{
+			Message: Message{
+				TypeId: QuitMessageId,
+				Name: self.name,
+				Time: time.Now(),
+				},
+			}
+	err := enc.Encode(msg)
+	if err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
-
-func (c *Client) GetQuitMessage() ([]byte) {
-	raw := append([]byte{byte(QuitMessageId)}, []byte(c.name + "\x00")...)
-	return raw
-}
-
 
 type RegisterMessage struct {
 	Message
 }
 
-func (self *RegisterMessage) MessageType() MessageTypeId {
-	return self.type_id
-}
 
-func (self *RegisterMessage) Name() string {
-	return self.name
-}
+func (self *Client) GetSendMessage(user_msg string) ([]byte) {
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
 
-func (self *RegisterMessage) Time() time.Time {
-	return self.time
+	msg := SendMessage{
+			Message: Message{
+				TypeId: SendMessageId,
+				Name: self.name,
+				Time: time.Now(),
+				},
+			UserMessage: user_msg,
+			}
+	err := enc.Encode(msg)
+	if err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
-
 
 type SendMessage struct {
 	Message
-	message string
+	UserMessage string
 }
 
-func (self *SendMessage) Name() string {
-	return self.name
-}
 
-func (self *SendMessage) MessageType() MessageTypeId {
-	return self.type_id
-}
+func (self *Client) GetQuitMessage() ([]byte) {
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
 
-func (self *SendMessage) Time() time.Time {
-	return self.time
+	msg := QuitMessage{
+			Message: Message{
+				TypeId: QuitMessageId,
+				Name: self.name,
+				Time: time.Now(),
+				},
+			}
+	err := enc.Encode(msg)
+	if err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
-
-func (self *SendMessage) UserMessage() string {
-	return self.message
-}
-
 
 type QuitMessage struct {
 	Message
 }
 
-func (self *QuitMessage) MessageType() MessageTypeId {
-	return self.type_id
-}
-
-func (self *QuitMessage) Name() string {
-	return self.name
-}
-
-func (self *QuitMessage) Time() time.Time {
-	return self.time
-}
 
 func MessageFromBytes(data []byte) (Messager) {
 	msg_type := MessageTypeId(data[0])
-
-	STR_END := []byte("\x00")[0]
+	dec := gob.NewDecoder(bytes.NewBuffer(data))
 
 	switch msg_type {
 	case RegisterMessageId:
-		field_start := 1
-		name := ""
-		for i, b := range data[1:] {
-			if b == STR_END {
-				name = string(data[field_start:i+1])
-
-				msg := RegisterMessage{
-						Message: Message{
-							type_id: RegisterMessageId,
-							name: name,
-						},
-						}
-				return &msg
-			}
+		var msg RegisterMessage
+		err := dec.Decode(&msg)
+		if err != nil {
+			panic(err)
 		}
-		panic(fmt.Sprintf("Register message too long: %d", len(data)))
+		return &msg
 	case SendMessageId:
-		name := ""
-		msg_text := ""
-		field_idx := 0
-		field_start := 1
-
-		for i, b := range data[1:] {
-			if b == STR_END {
-				switch field_idx {
-				case 0:
-					name = string(data[field_start:i+1])
-					field_start = 1+i+1
-					field_idx++
-				case 1:
-					msg_text = string(data[field_start:i+1])
-					field_idx++
-
-					msg := SendMessage{
-							Message: Message{
-								type_id: SendMessageId,
-								name: name,
-							},
-							message: msg_text,
-							}
-					//fmt.Printf("Received message [%s]: %s\n", name, msg_text)
-					return &msg
-				}
-			}
+		var msg SendMessage
+		err := dec.Decode(&msg)
+		if err != nil {
+			panic(err)
 		}
-		panic("SendMessageId bug encountered, please report")
+		return &msg
 	case QuitMessageId:
-		name := ""
-		field_idx := 0
-		field_start := 1
-
-		for i, b := range data[1:] {
-			if b == STR_END {
-				switch field_idx {
-				case 0:
-					name = string(data[field_start:i+1])
-					field_start = 1+i+1
-					field_idx++
-
-					msg := QuitMessage{
-							Message: Message{
-								type_id: QuitMessageId,
-								name: name,
-							},
-							}
-					return &msg
-				}
-			}
+		var msg QuitMessage
+		err := dec.Decode(&msg)
+		if err != nil {
+			panic(err)
 		}
-		panic("QuitMessageId bug encountered, please report")
+		return &msg
 	default:
 		panic(fmt.Sprintf("Unhandled valid message type: %d", msg_type))
 	}

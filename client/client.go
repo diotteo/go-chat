@@ -48,13 +48,13 @@ func receive_messages(conn net.Conn, ch chan string, quit_ch chan bool) {
 		switch gen_msg.MessageType() {
 		case libs.SendMessageId:
 			msg := gen_msg.(*libs.SendMessage)
-			ch <- fmt.Sprintf("[%s] %s", msg.Name(), msg.UserMessage())
+			ch <- fmt.Sprintf("[%s] %s", msg.Name, msg.UserMessage)
 		case libs.QuitMessageId:
 			msg := gen_msg.(*libs.QuitMessage)
-			ch <- fmt.Sprintf("** %s has left **", msg.Name())
+			ch <- fmt.Sprintf("** %s has left **", msg.Name)
 		case libs.RegisterMessageId:
 			msg := gen_msg.(*libs.RegisterMessage)
-			ch <- fmt.Sprintf("** %s has joined **", msg.Name())
+			ch <- fmt.Sprintf("** %s has joined **", msg.Name)
 		}
 	}
 }
