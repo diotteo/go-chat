@@ -45,16 +45,16 @@ func receive_messages(conn net.Conn, ch chan string, quit_ch chan bool) {
 			fmt.Println("Shouldn't run")
 		}
 		gen_msg := libs.MessageFromBytes(buf[:n])
-		switch gen_msg.MessageType() {
-		case libs.SendMessageId:
-			msg := gen_msg.(*libs.SendMessage)
-			ch <- fmt.Sprintf("[%s] %s", msg.Name, msg.UserMessage)
-		case libs.QuitMessageId:
-			msg := gen_msg.(*libs.QuitMessage)
-			ch <- fmt.Sprintf("** %s has left **", msg.Name)
-		case libs.RegisterMessageId:
-			msg := gen_msg.(*libs.RegisterMessage)
-			ch <- fmt.Sprintf("** %s has joined **", msg.Name)
+		switch gen_msg.Id {
+		case libs.TypeId_SEND_MESSAGE_ID:
+			msg := gen_msg.Send
+			ch <- fmt.Sprintf("[%s] %s", msg.Header.Name, msg.UserMessage)
+		case libs.TypeId_QUIT_MESSAGE_ID:
+			msg := gen_msg.Quit
+			ch <- fmt.Sprintf("** %s has left **", msg.Header.Name)
+		case libs.TypeId_REGISTER_MESSAGE_ID:
+			msg := gen_msg.Register
+			ch <- fmt.Sprintf("** %s has joined **", msg.Header.Name)
 		}
 	}
 }
@@ -118,7 +118,8 @@ func main() {
 	//fmt.Printf("Connected to server %s\n", server_url)
 
 	client := libs.NewClient(username, nil)
-	conn.Write(client.GetRegisterMessage())
+	data, _ := client.GetRegisterMessage()
+	conn.Write(data)
 
 	//rdr := bufio.NewReader(os.Stdin)
 	//go user_input(rdr, user_ch)
@@ -132,12 +133,14 @@ func main() {
 		case ev := <-uiEvents:
 			switch ev.ID {
 			case "<C-c>":
-				conn.Write(client.GetQuitMessage())
+				data, _ := client.GetQuitMessage()
+				conn.Write(data)
 				b_continue = false
 				break
 			case "<Enter>":
 				if len(msg) > 0 {
-					conn.Write(client.GetSendMessage(msg))
+					data, _ := client.GetSendMessage(msg)
+					conn.Write(data)
 					msg = ""
 				}
 			case "<Backspace>":
@@ -164,7 +167,8 @@ func main() {
 			msg_count++
 			ui.Render(l)
 		case msg := <-user_ch:
-			conn.Write(client.GetSendMessage(msg))
+			data, _ := client.GetSendMessage(msg)
+			conn.Write(data)
 		}
 	}
 }
