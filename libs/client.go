@@ -1,6 +1,7 @@
 package libs
 
 import (
+	"fmt"
 	"net"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -29,10 +30,16 @@ func (self *Client) GetRegisterMessage() ([]byte, error) {
 				Name: self.name,
 				SentTs: timestamppb.Now(),
 				}
-	m := &RegisterMessage{
+	m := &GenericMessage{
 			Header: &h,
+			Payload: &GenericMessage_Register{
+				Register: &RegisterMessage{},
+				},
 			}
 	data, err := proto.Marshal(m)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to marshall register: %s", err))
+	}
 	return data, err
 }
 
@@ -42,10 +49,16 @@ func (self *Client) GetQuitMessage() ([]byte, error) {
 				Name: self.name,
 				SentTs: timestamppb.Now(),
 				}
-	m := &QuitMessage{
+	m := &GenericMessage{
 			Header: &h,
+			Payload: &GenericMessage_Quit{
+				Quit: &QuitMessage{},
+				},
 			}
 	data, err := proto.Marshal(m)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to marshall quit: %s", err))
+	}
 	return data, err
 }
 
@@ -55,24 +68,27 @@ func (self *Client) GetSendMessage(msg string) ([]byte, error) {
 				Name: self.name,
 				SentTs: timestamppb.Now(),
 				}
-	m := &SendMessage{
+	m := &GenericMessage{
 			Header: &h,
-			UserMessage: msg,
+			Payload: &GenericMessage_Send{
+				Send: &SendMessage{
+					UserMessage: msg,
+					},
+				},
 			}
 	data, err := proto.Marshal(m)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to marshall send: %s", err))
+	}
 	return data, err
 }
 
 
-type GenericMessage struct {
-	Id TypeId
-	Register *RegisterMessage
-	Send *SendMessage
-	Quit *QuitMessage
-}
-
-func MessageFromBytes(data []byte) (GenericMessage) {
-	msg_type := TypeId(data[0])
-
-	return GenericMessage{ Id: msg_type }
+func MessageFromBytes(data []byte) (*GenericMessage) {
+	msg := &GenericMessage{}
+	err := proto.Unmarshal(data, msg)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to unmarshall register: %s", err))
+	}
+	return msg
 }

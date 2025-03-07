@@ -28,10 +28,9 @@ func main() {
 		if err != nil {
 			fmt.Printf("couldn't read: %s\n", err)
 		} else {
-			gen_msg := libs.MessageFromBytes(buf[:n])
-			switch gen_msg.Id {
-			case libs.TypeId_REGISTER_MESSAGE_ID:
-				msg := gen_msg.Register
+			msg := libs.MessageFromBytes(buf[:n])
+			switch msg.Payload.(type) {
+			case *libs.GenericMessage_Register:
 				client, found := clients[msg.Header.Name]
 				_ = client
 				if found {
@@ -45,19 +44,18 @@ func main() {
 					}
 					clients[msg.Header.Name] = sender
 				}
-			case libs.TypeId_SEND_MESSAGE_ID:
-				msg := gen_msg.Send
-				fmt.Printf("[%s] %s\n", msg.Header.Name, msg.UserMessage)
+			case *libs.GenericMessage_Send:
+				user_msg := msg.GetSend().UserMessage
+				fmt.Printf("[%s] %s\n", msg.Header.Name, user_msg)
 				sender, ok := clients[msg.Header.Name]
 				if ok {
 					for name, client := range clients {
-						data, _ := sender.GetSendMessage(msg.UserMessage)
+						data, _ := sender.GetSendMessage(user_msg)
 						conn.WriteToUDP(data, client.Addr())
 						_ = name
 					}
 				}
-			case libs.TypeId_QUIT_MESSAGE_ID:
-				msg := gen_msg.Quit
+			case *libs.GenericMessage_Quit:
 				sender, ok := clients[msg.Header.Name]
 				if ok {
 					fmt.Printf("** %s has left **\n", msg.Header.Name)

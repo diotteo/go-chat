@@ -18,15 +18,20 @@ message Header {
 }
 
 message RegisterMessage {
-	Header header = 1;
 }
 
 message SendMessage {
-	Header header = 1;
-	string user_message = 4;
+	string user_message = 2;
 }
 
 message QuitMessage {
-	Header header = 1;
 }
 
+message GenericMessage {
+	Header header = 1;
+	oneof payload {
+		RegisterMessage register = 10;
+		QuitMessage quit = 11;
+		SendMessage send = 12;
+	}
+}

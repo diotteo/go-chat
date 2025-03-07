@@ -44,19 +44,28 @@ func receive_messages(conn net.Conn, ch chan string, quit_ch chan bool) {
 			}
 			fmt.Println("Shouldn't run")
 		}
-		gen_msg := libs.MessageFromBytes(buf[:n])
-		switch gen_msg.Id {
-		case libs.TypeId_SEND_MESSAGE_ID:
-			msg := gen_msg.Send
-			ch <- fmt.Sprintf("[%s] %s", msg.Header.Name, msg.UserMessage)
-		case libs.TypeId_QUIT_MESSAGE_ID:
-			msg := gen_msg.Quit
-			ch <- fmt.Sprintf("** %s has left **", msg.Header.Name)
-		case libs.TypeId_REGISTER_MESSAGE_ID:
-			msg := gen_msg.Register
+		msg := libs.MessageFromBytes(buf[:n])
+		switch msg.Payload.(type) {
+		case *libs.GenericMessage_Register:
 			ch <- fmt.Sprintf("** %s has joined **", msg.Header.Name)
+		case *libs.GenericMessage_Quit:
+			ch <- fmt.Sprintf("** %s has left **", msg.Header.Name)
+		case *libs.GenericMessage_Send:
+			user_msg := msg.GetSend().UserMessage
+			ch <- fmt.Sprintf("[%s] %s", msg.Header.Name, user_msg)
 		}
 	}
+}
+
+func log_message(msg string, l *widgets.List, msg_count *int) {
+	//fmt.Printf("Received %s\n", msg)
+	if *msg_count >= cap(l.Rows) {
+		l.Rows = append(l.Rows, msg)
+	} else {
+		l.Rows[*msg_count] = msg
+	}
+	(*msg_count)++
+	ui.Render(l)
 }
 
 func main() {
@@ -141,6 +150,7 @@ func main() {
 				if len(msg) > 0 {
 					data, _ := client.GetSendMessage(msg)
 					conn.Write(data)
+					ui.Render(l)
 					msg = ""
 				}
 			case "<Backspace>":
@@ -159,13 +169,7 @@ func main() {
 			ui.Render(p)
 		case msg := <-msg_ch:
 			//fmt.Printf("Received %s\n", msg)
-			if msg_count >= cap(l.Rows) {
-				l.Rows = append(l.Rows, msg)
-			} else {
-				l.Rows[msg_count] = msg
-			}
-			msg_count++
-			ui.Render(l)
+			log_message(msg, l, &msg_count)
 		case msg := <-user_ch:
 			data, _ := client.GetSendMessage(msg)
 			conn.Write(data)
