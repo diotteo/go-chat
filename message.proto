@@ -5,14 +5,7 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "./libs";
 
-enum TypeId {
-	REGISTER_MESSAGE_ID = 0;
-	SEND_MESSAGE_ID = 1;
-	QUIT_MESSAGE_ID = 2;
-}
-
 message Header {
-	TypeId type_id = 1;
 	string name = 2;
 	google.protobuf.Timestamp sent_ts = 3;
 }

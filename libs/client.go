@@ -26,7 +26,6 @@ func (self *Client) Addr() (*net.UDPAddr) {
 
 func (self *Client) GetRegisterMessage() ([]byte, error) {
 	h := Header{
-				TypeId: TypeId_REGISTER_MESSAGE_ID,
 				Name: self.name,
 				SentTs: timestamppb.Now(),
 				}
@@ -45,7 +44,6 @@ func (self *Client) GetRegisterMessage() ([]byte, error) {
 
 func (self *Client) GetQuitMessage() ([]byte, error) {
 	h := Header{
-				TypeId: TypeId_QUIT_MESSAGE_ID,
 				Name: self.name,
 				SentTs: timestamppb.Now(),
 				}
@@ -64,7 +62,6 @@ func (self *Client) GetQuitMessage() ([]byte, error) {
 
 func (self *Client) GetSendMessage(msg string) ([]byte, error) {
 	h := Header{
-				TypeId: TypeId_SEND_MESSAGE_ID,
 				Name: self.name,
 				SentTs: timestamppb.Now(),
 				}
