@@ -45,26 +45,28 @@ func receive_messages(conn net.Conn, ch chan string, quit_ch chan bool) {
 			fmt.Println("Shouldn't run")
 		}
 		msg := libs.MessageFromBytes(buf[:n])
+		ts := msg.Header.SentTs.AsTime()
+		h := ts.Hour()
+		m := ts.Minute()
+
 		switch msg.Payload.(type) {
 		case *libs.GenericMessage_Register:
-			ch <- fmt.Sprintf("** %s has joined **", msg.Header.Name)
+			ch <- fmt.Sprintf("%2d:%2d ** %s has joined **", h, m, msg.Header.Name)
 		case *libs.GenericMessage_Quit:
-			ch <- fmt.Sprintf("** %s has left **", msg.Header.Name)
+			ch <- fmt.Sprintf("%2d:%2d ** %s has left **", h, m, msg.Header.Name)
 		case *libs.GenericMessage_Send:
 			user_msg := msg.GetSend().UserMessage
-			ch <- fmt.Sprintf("[%s] %s", msg.Header.Name, user_msg)
+			ch <- fmt.Sprintf("%2d:%2d [%s] %s", h, m, msg.Header.Name, user_msg)
 		}
 	}
 }
 
-func log_message(msg string, l *widgets.List, msg_count *int) {
+func log_message(msg string, l *widgets.List, msg_max int) {
 	//fmt.Printf("Received %s\n", msg)
-	if *msg_count >= cap(l.Rows) {
-		l.Rows = append(l.Rows, msg)
-	} else {
-		l.Rows[*msg_count] = msg
+	l.Rows = append(l.Rows, msg)
+	if len(l.Rows) > msg_max {
+		l.ScrollBottom()
 	}
-	(*msg_count)++
 	ui.Render(l)
 }
 
@@ -97,11 +99,12 @@ func main() {
 
 	chat_w, chat_h := ui.TerminalDimensions()
 	chat_h -= 1
+	msg_max := chat_h - 2
 
 	l := widgets.NewList()
 	l.Title = "Chat"
 	l.SetRect(0, 0, chat_w, chat_h)
-	l.Rows = make([]string, chat_h-2)
+	l.Rows = make([]string, 0)
 	ui.Render(l)
 
 	p := widgets.NewParagraph()
@@ -135,7 +138,6 @@ func main() {
 	go receive_messages(conn, msg_ch, quit_ch)
 	uiEvents := ui.PollEvents()
 	msg := ""
-	msg_count := 0
 	b_continue := true
 	for b_continue {
 		select {
@@ -169,7 +171,7 @@ func main() {
 			ui.Render(p)
 		case msg := <-msg_ch:
 			//fmt.Printf("Received %s\n", msg)
-			log_message(msg, l, &msg_count)
+			log_message(msg, l, msg_max)
 		case msg := <-user_ch:
 			data, _ := client.GetSendMessage(msg)
 			conn.Write(data)

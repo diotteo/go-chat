@@ -29,14 +29,18 @@ func main() {
 			fmt.Printf("couldn't read: %s\n", err)
 		} else {
 			msg := libs.MessageFromBytes(buf[:n])
+			ts := msg.Header.SentTs.AsTime()
+			h := ts.Hour()
+			m := ts.Minute()
+
 			switch msg.Payload.(type) {
 			case *libs.GenericMessage_Register:
 				client, found := clients[msg.Header.Name]
 				_ = client
 				if found {
-					fmt.Printf("Name %s already taken\n", msg.Header.Name)
+					fmt.Printf("%2d:%2d Name %s already taken\n", h, m, msg.Header.Name)
 				} else {
-					fmt.Printf("Registering new user %s from %s\n", msg.Header.Name, addr.IP)
+					fmt.Printf("%2d:%2d Registering new user %s from %s\n", h, m, msg.Header.Name, addr.IP)
 					sender := libs.NewClient(msg.Header.Name, addr)
 					for _, client := range clients {
 						data, _ := sender.GetRegisterMessage()
@@ -46,7 +50,7 @@ func main() {
 				}
 			case *libs.GenericMessage_Send:
 				user_msg := msg.GetSend().UserMessage
-				fmt.Printf("[%s] %s\n", msg.Header.Name, user_msg)
+				fmt.Printf("%2d:%2d [%s] %s\n", h, m, msg.Header.Name, user_msg)
 				sender, ok := clients[msg.Header.Name]
 				if ok {
 					for name, client := range clients {
@@ -58,7 +62,7 @@ func main() {
 			case *libs.GenericMessage_Quit:
 				sender, ok := clients[msg.Header.Name]
 				if ok {
-					fmt.Printf("** %s has left **\n", msg.Header.Name)
+					fmt.Printf("%2d:%2d ** %s has left **\n", h, m, msg.Header.Name)
 					delete(clients, msg.Header.Name)
 					for _, client := range clients {
 						data, _ := sender.GetQuitMessage()
