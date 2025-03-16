@@ -1,4 +1,4 @@
-module client
+module github.com/diotteo/chat/client
 
 go 1.21.3
 

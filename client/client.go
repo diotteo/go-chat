@@ -11,7 +11,7 @@ import (
 	"github.com/gizak/termui/v3/widgets"
 	//"flag"
 
-	"libs"
+	"github.com/diotteo/chat/libs"
 	)
 
 const LINE_END = '\n'

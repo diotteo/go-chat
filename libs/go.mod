@@ -1,4 +1,4 @@
-module libs
+module github.com/diotteo/chat/libs
 
 go 1.21.3
 

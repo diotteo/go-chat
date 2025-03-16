@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"libs"
+	"github.com/diotteo/chat/libs"
 	)
 
 func main() {
