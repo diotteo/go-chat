@@ -1,0 +1,30 @@
+syntax = "proto3";
+package chat.libs;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "./libs";
+
+message Header {
+	string name = 2;
+	google.protobuf.Timestamp sent_ts = 3;
+}
+
+message RegisterMessage {
+}
+
+message SendMessage {
+	string user_message = 2;
+}
+
+message QuitMessage {
+}
+
+message GenericMessage {
+	Header header = 1;
+	oneof payload {
+		RegisterMessage register = 10;
+		QuitMessage quit = 11;
+		SendMessage send = 12;
+	}
+}
